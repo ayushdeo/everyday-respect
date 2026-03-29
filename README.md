@@ -17,7 +17,7 @@ Implemented a browser-native audio extraction and playback system for synchroniz
 - **Frontend**: Precise synchronization with drift correction and blob preloading to bypass range-request limitations.
 - **Protocol**: Patched the TUS client to support production cross-origin accessibility and CSRF integrity.
 
-📖 **[Deep Dive: Audio Implementation Details](challenge/PART_A_AUDIO.md)**
+📖 **[Read the Full Technical Write-Up (Part A & Part B)](CHALLENGE_WRITEUP.md)**
 
 ---
 
@@ -29,7 +29,7 @@ Established a robust, automated deployment pipeline for Microsoft Azure Cloud.
 - **Automation**: Idempotent `setup.sh` for dependency management and server lifecycle.
 - **Ingress**: Traefik-based same-origin routing on port 80 for simplified networking.
 
-📖 **[Deep Dive: Azure Deployment & Automation](challenge/PART_B_AZURE.md)**
+📖 **[Read the Full Technical Write-Up (Part A & Part B)](CHALLENGE_WRITEUP.md)**
 
 ---
 
