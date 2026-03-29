@@ -91,15 +91,32 @@ good "Repository ready at $APP_DIR"
 
 # ── 5. Detect public IP and write .env ───────────────────────────────────────
 log "Detecting VM public IP..."
-PUBLIC_IP=$(curl -s --connect-timeout 5 \
-    -H "Metadata:true" \
-    "http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/publicIpAddress?api-version=2021-02-01&format=text" \
-    2>/dev/null || hostname -I | awk '{print $1}')
+
+# Priority 1: explicit argument passed by caller (az run-command --parameters)
+PUBLIC_IP="${1:-}"
+
+# Priority 2: Azure IMDS (works when SSH'd in; may not work via az run-command)
+if [ -z "$PUBLIC_IP" ]; then
+    PUBLIC_IP=$(curl -s --connect-timeout 3 \
+        -H "Metadata:true" \
+        "http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/publicIpAddress?api-version=2021-02-01&format=text" \
+        2>/dev/null || true)
+fi
+
+# Priority 3: external IP lookup
+if [ -z "$PUBLIC_IP" ]; then
+    PUBLIC_IP=$(curl -s --connect-timeout 5 https://ifconfig.me 2>/dev/null || true)
+fi
+
+# Priority 4: first non-loopback NIC address
+if [ -z "$PUBLIC_IP" ]; then
+    PUBLIC_IP=$(hostname -I | awk '{print $1}')
+fi
 
 if [ -z "$PUBLIC_IP" ]; then
-    err "Could not detect public IP. Set CVAT_HOST manually in $APP_DIR/.env"
+    err "Could not detect public IP. Pass it explicitly: bash setup.sh <YOUR_IP>"
 fi
-good "Public IP detected: $PUBLIC_IP"
+good "Public IP: $PUBLIC_IP"
 
 log "Writing .env file..."
 SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
