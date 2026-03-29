@@ -27,3 +27,5 @@ LICENSE         text
 *.ttf           binary
 *.pdf           binary
 
+
+deployment/azure/provision.ps1 -text
