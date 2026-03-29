@@ -33,6 +33,18 @@ Established a robust, automated deployment pipeline for Microsoft Azure Cloud.
 
 ---
 
+## 🧠 Part C: VideoLLaMA3 Long-Video Embeddings
+Completed a deep-dive architecture audit and implemented a high-performance embedding extraction strategy for Vision-Language Models.
+
+### 📝 Key Deliverables:
+- **Architecture Audit**: Comprehensive analysis of Qwen2-VL internals, multimodal projectors, and temporal token compression logic.
+- **Heuristic Salience Weighting**: An advanced embedding extraction script featuring centroid-based distance scoring to identify distributional outliers in long-form videos.
+- **Note on Execution**: Due to the significant GPU VRAM and specific CUDA environment requirements of VideoLLaMA3 (e.g., Flash Attention 2), these implementation files represent **architectural enhancements and code-level suggestions**. They have been semantically verified against the model's source but not executed due to local compute limitations.
+
+📖 **[Read the Full Technical Write-Up (Part C)](videollama3/CHALLENGE_PART_C.md)**
+
+---
+
 ## 🛠️ Reproducibility
 
 ### Local Execution (Docker)
