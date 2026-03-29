@@ -124,8 +124,9 @@ cat > "$APP_DIR/.env" <<ENV
 CVAT_HOST=$PUBLIC_IP
 DJANGO_SECRET_KEY=$SECRET
 CVAT_VERSION=dev
+ALLOWED_HOSTS=$PUBLIC_IP,localhost,127.0.0.1,cvat-server
 ENV
-good ".env written with CVAT_HOST=$PUBLIC_IP"
+good ".env written with CVAT_HOST=$PUBLIC_IP and ALLOWED_HOSTS set"
 
 # ── 6. Build backend image ────────────────────────────────────────────────────
 log "Building CVAT backend image (cvat/server:dev) — takes ~3 min..."
