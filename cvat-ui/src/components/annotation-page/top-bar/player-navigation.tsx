@@ -46,6 +46,7 @@ interface Props {
     keyMap: KeyMap;
     workspace: Workspace;
     onSliderChange(value: number): void;
+    onSliderCommit(value: number): void;
     onInputChange(value: number): void;
     onURLIconClick(): void;
     onCopyFilenameIconClick(): void;
@@ -97,6 +98,7 @@ function PlayerNavigation(props: Props): JSX.Element {
         keyMap,
         workspace,
         onSliderChange,
+        onSliderCommit,
         onInputChange,
         onURLIconClick,
         onCopyFilenameIconClick,
@@ -214,6 +216,7 @@ function PlayerNavigation(props: Props): JSX.Element {
                             marks={marks}
                             value={frameNumber || 0}
                             onChange={workspace !== Workspace.SINGLE_SHAPE ? onSliderChange : undefined}
+                            onAfterChange={workspace !== Workspace.SINGLE_SHAPE ? onSliderCommit : undefined}
                         />
                         {!!ranges && (
                             <svg className='cvat-player-slider-progress' viewBox='0 0 1000 16' xmlns='http://www.w3.org/2000/svg'>

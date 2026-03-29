@@ -34,7 +34,8 @@ ARG SOURCE_MAPS_TOKEN
 RUN CLIENT_PLUGINS="${CLIENT_PLUGINS}" \
 DISABLE_SOURCE_MAPS="${DISABLE_SOURCE_MAPS}" \
 UI_APP_CONFIG="${UI_APP_CONFIG}" \
-SOURCE_MAPS_TOKEN="${SOURCE_MAPS_TOKEN}" yarn run build:cvat-ui
+SOURCE_MAPS_TOKEN="${SOURCE_MAPS_TOKEN}" \
+NODE_OPTIONS="--max_old_space_size=4096" yarn run build:cvat-ui
 
 FROM nginxinc/nginx-unprivileged:1.29.5-alpine3.23-slim
 

@@ -786,3 +786,8 @@ USER_LAST_ACTIVITY_UPDATE_MIN_INTERVAL = timedelta(days=1)
 
 # Health check settings
 HEALTH_CHECK = {"DISK_USAGE_MAX": int(os.getenv("CVAT_HEALTH_DISK_USAGE_MAX", 90))}
+
+# Ensure local UI can communicate without CSRF/CORS blocks
+CSRF_TRUSTED_ORIGINS = ['http://localhost:3000', 'https://localhost:3000', 'localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:8081', 'http://localhost:8080']
+CORS_ALLOWED_ORIGINS = ['http://localhost:3000', 'https://localhost:3000', 'localhost:3000', 'http://127.0.0.1:3000', 'http://localhost:8081', 'http://localhost:8080']
+CORS_ALLOW_CREDENTIALS = True

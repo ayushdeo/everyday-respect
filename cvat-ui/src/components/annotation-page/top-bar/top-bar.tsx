@@ -3,8 +3,9 @@
 //
 // SPDX-License-Identifier: MIT
 
-import React from 'react';
+import React, { useState } from 'react';
 import { Col, Row } from 'antd/lib/grid';
+import { SoundOutlined } from '@ant-design/icons';
 
 import {
     ActiveControl, NavigationType, ToolsBlockerState, Workspace,
@@ -16,6 +17,7 @@ import LeftGroup from './left-group';
 import PlayerButtons from './player-buttons';
 import PlayerNavigation from './player-navigation';
 import RightGroup from './right-group';
+import AudioPlayer from './audio-player';
 
 interface Props {
     playing: boolean;
@@ -67,6 +69,7 @@ interface Props {
     onSelectChapter(id: number): void;
     setHoveredChapter(id: number | null): void;
     onSliderChange(value: number): void;
+    onSliderCommit(value: number): void;
     onInputChange(value: number): void;
     onURLIconClick(): void;
     onCopyFilenameIconClick(): void;
@@ -131,6 +134,7 @@ export default function AnnotationTopBarComponent(props: Props): JSX.Element {
         onSelectChapter,
         setHoveredChapter,
         onSliderChange,
+        onSliderCommit,
         onInputChange,
         onURLIconClick,
         onCopyFilenameIconClick,
@@ -145,6 +149,8 @@ export default function AnnotationTopBarComponent(props: Props): JSX.Element {
         switchShowSearchPallet,
         showSearchFrameByName,
     } = props;
+
+    const [isMuted, setIsMuted] = useState<boolean>(false);
 
     const playerItems: [JSX.Element, number][] = [];
 
@@ -177,6 +183,23 @@ export default function AnnotationTopBarComponent(props: Props): JSX.Element {
     ), 0]);
 
     playerItems.push([(
+        <React.Fragment key='audio_player'>
+            <div
+                className='cvat-player-mute-button'
+                onClick={() => setIsMuted(!isMuted)}
+                style={{ fontSize: '18px', padding: '0 10px', cursor: 'pointer', display: 'flex', alignItems: 'center' }}
+            >
+                {isMuted ? (
+                    <svg viewBox="64 64 896 896" focusable="false" data-icon="sound" width="1em" height="1em" fill="currentColor" aria-hidden="true"><path d="M622.3 490.6l103.2-103.3a8.03 8.03 0 00-11.3-11.3l-103.3 103.2-103.2-103.2a8.03 8.03 0 00-11.3 11.3l103.2 103.3-103.2 103.2a8.03 8.03 0 0011.3 11.3l103.2-103.2 103.3 103.2a8.03 8.03 0 0011.3-11.3l-103.2-103.2zM805 385.6c7.7-18.9 11.7-39.1 11.7-59.6 0-14.8-1.7-29.3-5.2-43.5l-59 13.9c1.9 9.5 2.9 19.3 2.9 29.3 0 14.5-3.3 28.5-9.4 41.5l59 18.4z"></path></svg>
+                ) : (
+                    <SoundOutlined />
+                )}
+            </div>
+            <AudioPlayer isMuted={isMuted} />
+        </React.Fragment>
+    ), 5]);
+
+    playerItems.push([(
         <PlayerNavigation
             key='player_navigation'
             startFrame={startFrame}
@@ -195,6 +218,7 @@ export default function AnnotationTopBarComponent(props: Props): JSX.Element {
             keyMap={keyMap}
             workspace={workspace}
             onSliderChange={onSliderChange}
+            onSliderCommit={onSliderCommit}
             onInputChange={onInputChange}
             onURLIconClick={onURLIconClick}
             onCopyFilenameIconClick={onCopyFilenameIconClick}

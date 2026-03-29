@@ -1334,6 +1334,16 @@ def create_thread(
 
         source_paths = [upload_dir / f for f in media_files]
 
+        if media_type == "video":
+            video_path = str(source_paths[0])
+            try:
+                from cvat.apps.engine.media_extractors import extract_audio
+                audio_output_path = os.path.join(db_task.get_dirname(), "audio.mp4")
+                update_status("Extracting audio stream from video")
+                extract_audio(video_path, audio_output_path)
+            except Exception as e:
+                slogger.glob.warning(f"Failed to extract audio from video: {e}")
+
         details = {
             "source_paths": source_paths,
             "step": db_data.get_frame_step(),
@@ -1603,6 +1613,7 @@ def create_thread(
                 )
             )
             video_path = os.path.join(upload_dir, media_files[0])
+
         else:  # images, archive, pdf
             db_data.size = len(extractor)
 

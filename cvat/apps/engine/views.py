@@ -896,6 +896,20 @@ class TaskViewSet(viewsets.GenericViewSet, mixins.ListModelMixin,
 
         return queryset
 
+    @extend_schema(summary='Get task audio', responses={'200': OpenApiResponse(description='Audio file')})
+    @action(detail=True, methods=['GET'], url_path='audio')
+    def audio(self, request, pk):
+        import os
+        from django.http import FileResponse, HttpResponseNotFound
+        
+        task = self.get_object()
+        audio_path = os.path.join(task.get_dirname(), "audio.mp4")
+        
+        if not os.path.exists(audio_path):
+            return HttpResponseNotFound("No audio available")
+            
+        return FileResponse(open(audio_path, 'rb'), content_type='audio/mp4')
+
     @extend_schema(summary='Recreate a task from a backup',
         description=textwrap.dedent("""
             The backup import process is as follows:

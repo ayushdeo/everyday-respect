@@ -730,6 +730,7 @@ class TaskPermission(
             ("metadata", "GET"): Scopes.VIEW_METADATA,
             ("metadata", "PATCH"): Scopes.UPDATE_METADATA,
             ("data", "GET"): Scopes.VIEW_DATA,
+            ("audio", "GET"): Scopes.VIEW_DATA,
             ("data", "POST"): Scopes.UPLOAD_DATA,
             ("append_data_chunk", "PATCH"): Scopes.UPLOAD_DATA,
             ("append_data_chunk", "HEAD"): Scopes.UPLOAD_DATA,

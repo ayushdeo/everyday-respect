@@ -26,16 +26,29 @@ class AxiosHttpResponse implements tus.HttpResponse {
     }
 }
 
+function getCSRFToken(): string | undefined {
+    if (typeof document === 'undefined') return undefined;
+    const match = document.cookie.match(/(?:^|;) ?csrftoken=([^;]*)(?:;|$)/);
+    return match ? match[1] : undefined;
+}
+
 class AxiosHttpRequest implements tus.HttpRequest {
     readonly #axiosConfig: AxiosRequestConfig;
     readonly #abortController: AbortController;
 
     constructor(method: string, url: string) {
         this.#abortController = new AbortController();
+        const csrfToken = getCSRFToken();
+        const headers: Record<string, string> = {};
+        if (csrfToken) {
+            headers['X-CSRFTOKEN'] = csrfToken;
+        }
+
         this.#axiosConfig = {
             method,
             url,
-            headers: {},
+            headers,
+            withCredentials: true,
             signal: this.#abortController.signal,
             // TUS has its own error handing mechanism, except throttle cases
             // Accept all statuses except 429, which should trigger axios-retry

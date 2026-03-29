@@ -798,6 +798,36 @@ class VideoReaderWithManifest:
                 if next_frame_filter_frame is None:
                     return
 
+def extract_audio(video_path: str, output_path: str):
+    """
+    Extracts the audio stream from a video file and saves it to output_path.
+    Silently skips if no audio stream is present.
+    """
+    try:
+        import av
+        with av.open(video_path) as container:
+            audio_stream = next((s for s in container.streams if s.type == 'audio'), None)
+            if not audio_stream:
+                return
+
+            with av.open(output_path, mode='w', format='mp4', options={'movflags': 'faststart'}) as output:
+                out_stream = output.add_stream('aac')
+                for packet in container.demux():
+                    if packet.stream == audio_stream:
+                        for frame in packet.decode():
+                            for out_packet in out_stream.encode(frame):
+                                output.mux(out_packet)
+                for packet in out_stream.encode(None):
+                    output.mux(packet)
+    except Exception as e:
+        import traceback
+        import sys
+        print(f"Audio extraction failed: {e}", file=sys.stderr)
+        traceback.print_exc(file=sys.stderr)
+        # Ignore errors if audio extraction fails, we don't want to break the whole task creation
+        pass
+
+
 
 class IChunkWriter(ABC):
     CHUNK_MIME_TYPE: ClassVar[str]

@@ -98,6 +98,7 @@ services:
         https_proxy:
         no_proxy:
         socks_proxy:
+        DISABLE_SOURCE_MAPS: 'true'
       dockerfile: Dockerfile.ui
 
   cvat_clickhouse:

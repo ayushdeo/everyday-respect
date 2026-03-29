@@ -741,6 +741,10 @@ class AnnotationTopBarContainer extends React.PureComponent<Props> {
                 setHoveredChapter={this.setHoveredChapter}
                 setNavigationType={setNavigationType}
                 onSliderChange={this.onChangePlayerSliderValue}
+                onSliderCommit={(value: number) => {
+                    // Emit a custom event so AudioPlayer can do a single precise seek on drag-end
+                    window.dispatchEvent(new CustomEvent('audio:scrub-commit', { detail: { frame: value } }));
+                }}
                 onInputChange={this.onChangePlayerInputValue}
                 onURLIconClick={this.onURLIconClick}
                 onCopyFilenameIconClick={this.onCopyFilenameIconClick}

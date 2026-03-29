@@ -29,3 +29,8 @@ LOGGING["loggers"]["uvicorn.access"] = {
     "level": "INFO",
     "propagate": False,
 }
+
+# Allow local UI development server to hit production API without CSRF mismatches
+CSRF_TRUSTED_ORIGINS = ['http://localhost:3000']
+CORS_ALLOWED_ORIGINS = ['http://localhost:3000']
+CORS_ALLOW_CREDENTIALS = True

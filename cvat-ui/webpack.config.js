@@ -90,11 +90,19 @@ module.exports = (env) => {
                     param.match(
                         /\/api\/.*|analytics\/.*|static\/.*|admin(?:\/(.*))?.*|profiler(?:\/(.*))?.*|documentation\/.*|django-rq(?:\/(.*))?/gm,
                     ),
-                target: env && env.API_URL,
+                target: (env && env.API_URL) || 'http://localhost:8081',
                 secure: false,
                 changeOrigin: true,
                 onProxyReq: (proxyReq) => {
                     proxyReq.setHeader('X-FORWARDED-HOST', `${host}:${port}`);
+                },
+                onProxyRes: (proxyRes, req, res) => {
+                    const location = proxyRes.headers['location'];
+                    if (location) {
+                        // Traefik overrides X-Forwarded-Host to 8081, causing TUS to jump cross-origin.
+                        // Force the Location redirect back to the proxy origin so TUS keeps the session cookies natively!
+                        proxyRes.headers['location'] = location.replace(/localhost:\d+/g, `${host}:${port}`);
+                    }
                 },
             }],
         },
