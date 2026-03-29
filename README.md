@@ -2,14 +2,14 @@
 
 This repository contains a modified fork of CVAT (Computer Vision Annotation Tool) featuring **Native Browser Audio Playback** and **Automated Azure Deployment**.
 
-## 🚀 Public Deployment
+## Public Deployment
 - **URL**: [http://172.169.250.108](http://172.169.250.108)
 - **Username**: `admin`
 - **Password**: `cvatayush26`
 
 ---
 
-## 🎧 Part A: Audio Implementation
+## Part A: Audio Implementation
 Implemented a browser-native audio extraction and playback system for synchronized video annotation.
 
 ### Key Logic:
@@ -17,11 +17,11 @@ Implemented a browser-native audio extraction and playback system for synchroniz
 - **Frontend**: Precise synchronization with drift correction and blob preloading to bypass range-request limitations.
 - **Protocol**: Patched the TUS client to support production cross-origin accessibility and CSRF integrity.
 
-📖 **[Read the Full Technical Write-Up (Part A & Part B)](CHALLENGE_WRITEUP.md)**
+[Read the Full Technical Write-Up (Part A & Part B)](CHALLENGE_WRITEUP.md)
 
 ---
 
-## ☁️ Part B: Azure Deployment
+## Part B: Azure Deployment
 Established a robust, automated deployment pipeline for Microsoft Azure Cloud.
 
 ### Architecture:
@@ -29,23 +29,23 @@ Established a robust, automated deployment pipeline for Microsoft Azure Cloud.
 - **Automation**: Idempotent `setup.sh` for dependency management and server lifecycle.
 - **Ingress**: Traefik-based same-origin routing on port 80 for simplified networking.
 
-📖 **[Read the Full Technical Write-Up (Part A & Part B)](CHALLENGE_WRITEUP.md)**
+[Read the Full Technical Write-Up (Part A & Part B)](CHALLENGE_WRITEUP.md)
 
 ---
 
-## 🧠 Part C: VideoLLaMA3 Long-Video Embeddings
+## Part C: VideoLLaMA3 Long-Video Embeddings
 Completed a deep-dive architecture audit and implemented a high-performance embedding extraction strategy for Vision-Language Models.
 
-### 📝 Key Deliverables:
+### Key Deliverables:
 - **Architecture Audit**: Comprehensive analysis of Qwen2-VL internals, multimodal projectors, and temporal token compression logic.
 - **Heuristic Salience Weighting**: An advanced embedding extraction script featuring centroid-based distance scoring to identify distributional outliers in long-form videos.
 - **Note on Execution**: Due to the significant GPU VRAM and specific CUDA environment requirements of VideoLLaMA3 (e.g., Flash Attention 2), these implementation files represent **architectural enhancements and code-level suggestions**. They have been semantically verified against the model's source but not executed due to local compute limitations.
 
-📖 **[Read the Full Technical Write-Up (Part C)](videollama3/CHALLENGE_PART_C.md)**
+[Read the Full Technical Write-Up (Part C)](videollama3/CHALLENGE_PART_C.md)
 
 ---
 
-## 🛠️ Reproducibility
+## Reproducibility
 
 ### Local Execution (Docker)
 To run the project locally with all modifications:
