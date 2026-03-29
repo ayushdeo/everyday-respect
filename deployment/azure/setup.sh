@@ -1,154 +1,170 @@
 #!/usr/bin/env bash
 # =============================================================================
 # CVAT Azure VM Setup Script
+# Repo: https://github.com/ayushdeo/everyday-respect (branch: develop)
 # =============================================================================
-# Architecture: Standard_B2s VM (2 vCPU, 4 GB RAM) — Ubuntu 22.04 LTS
-# Runs CVAT via Docker Compose with all Part A audio modifications preserved.
-# All services (UI + backend) are served on port 80 through Traefik — no split.
+# Run this on the Azure VM after SSH-ing in:
+#   bash <(curl -fsSL https://raw.githubusercontent.com/ayushdeo/everyday-respect/develop/deployment/azure/setup.sh)
 #
-# Usage (run on VM after SSH):
-#   chmod +x setup.sh && ./setup.sh
+# Or copy it to the VM and run:
+#   chmod +x setup.sh && sudo bash setup.sh
 # =============================================================================
 set -euo pipefail
 
 REPO_URL="https://github.com/ayushdeo/everyday-respect.git"
 REPO_BRANCH="develop"
 APP_DIR="/opt/cvat"
-COMPOSE_CMD="docker compose"
 
-log() { echo -e "\n\033[1;34m[SETUP]\033[0m $*"; }
-err() { echo -e "\n\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
+log()  { echo -e "\n\033[1;34m[SETUP]\033[0m $*"; }
+good() { echo -e "\033[1;32m[OK]\033[0m $*"; }
+err()  { echo -e "\033[1;31m[ERROR]\033[0m $*" >&2; exit 1; }
 
-# ── 1. System dependencies ────────────────────────────────────────────────────
+# Must run as root (sudo)
+if [ "$(id -u)" -ne 0 ]; then
+    err "Please run as root: sudo bash setup.sh"
+fi
+
+# ── 1. System packages ────────────────────────────────────────────────────────
 log "Installing system dependencies..."
-sudo apt-get update -qq
-sudo apt-get install -y -qq \
-    ca-certificates curl gnupg lsb-release git \
-    python3 python3-pip ffmpeg
+apt-get update -qq
+DEBIAN_FRONTEND=noninteractive apt-get install -y -qq \
+    ca-certificates curl gnupg lsb-release git python3 python3-pip ffmpeg
+good "System packages installed."
 
 # ── 2. Docker ─────────────────────────────────────────────────────────────────
-if ! command -v docker &>/dev/null; then
-    log "Installing Docker..."
-    curl -fsSL https://get.docker.com | sudo bash
-    sudo usermod -aG docker "$USER"
-    log "Docker installed. You may need to log out and back in for group changes."
+if command -v docker &>/dev/null; then
+    good "Docker already installed: $(docker --version)"
 else
-    log "Docker already installed: $(docker --version)"
+    log "Installing Docker..."
+    curl -fsSL https://get.docker.com | bash
+    systemctl enable docker
+    systemctl start docker
+    good "Docker installed."
 fi
 
-# Ensure Docker Compose v2 plugin is available
+# Ensure Docker Compose v2 plugin
 if ! docker compose version &>/dev/null; then
     log "Installing Docker Compose plugin..."
-    sudo apt-get install -y docker-compose-plugin
+    apt-get install -y -qq docker-compose-plugin
 fi
+good "Docker Compose: $(docker compose version --short)"
 
-# ── 3. Node.js (needed to build the UI) ────────────────────────────────────────
-if ! command -v node &>/dev/null; then
-    log "Installing Node.js 20..."
-    curl -fsSL https://deb.nodesource.com/setup_20.x | sudo -E bash -
-    sudo apt-get install -y nodejs
-fi
-
-# ── 4. Clone repo ────────────────────────────────────────────────────────────
-log "Cloning repository..."
-if [ -d "$APP_DIR" ]; then
-    log "Directory $APP_DIR already exists — pulling latest..."
-    cd "$APP_DIR"
-    git fetch origin "$REPO_BRANCH"
-    git checkout "$REPO_BRANCH"
-    git pull origin "$REPO_BRANCH"
+# ── 3. Node.js 20 ────────────────────────────────────────────────────────────
+if command -v node &>/dev/null; then
+    good "Node.js already installed: $(node --version)"
 else
-    sudo git clone --branch "$REPO_BRANCH" "$REPO_URL" "$APP_DIR"
-    sudo chown -R "$USER":"$USER" "$APP_DIR"
-    cd "$APP_DIR"
+    log "Installing Node.js 20..."
+    curl -fsSL https://deb.nodesource.com/setup_20.x | bash -
+    apt-get install -y -qq nodejs
+    good "Node.js installed: $(node --version)"
 fi
 
-# ── 5. Environment config ─────────────────────────────────────────────────────
-log "Configuring environment..."
-cd "$APP_DIR"
-
-if [ ! -f .env ]; then
-    cp deployment/azure/.env.example .env
-    # Auto-detect the public IP from Azure IMDS
-    PUBLIC_IP=$(curl -s -H "Metadata:true" \
-        "http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/publicIpAddress?api-version=2021-02-01&format=text" \
-        2>/dev/null || echo "")
-    
-    if [ -n "$PUBLIC_IP" ]; then
-        sed -i "s/YOUR_VM_PUBLIC_IP_HERE/$PUBLIC_IP/" .env
-        log "Auto-detected public IP: $PUBLIC_IP"
-    else
-        echo ""
-        echo "⚠️  Could not auto-detect public IP. Please edit .env and set CVAT_HOST manually:"
-        echo "   nano $APP_DIR/.env"
-        echo ""
-    fi
-    
-    # Generate a random secret key
-    SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
-    sed -i "s/change-me-please/$SECRET/" .env
-    log "Generated new DJANGO_SECRET_KEY"
+# ── 4. Clone or update repo ───────────────────────────────────────────────────
+log "Setting up repository at $APP_DIR..."
+if [ -d "$APP_DIR/.git" ]; then
+    log "Repo exists — pulling latest from $REPO_BRANCH..."
+    git -C "$APP_DIR" fetch origin "$REPO_BRANCH"
+    git -C "$APP_DIR" checkout "$REPO_BRANCH"
+    git -C "$APP_DIR" pull origin "$REPO_BRANCH"
+else
+    log "Cloning repository (branch: $REPO_BRANCH)..."
+    git clone --branch "$REPO_BRANCH" "$REPO_URL" "$APP_DIR"
 fi
+good "Repository ready at $APP_DIR"
 
-# ── 6. Build UI image (with audio modifications) ─────────────────────────────
-log "Building CVAT UI image (this takes ~5 minutes)..."
-# Increase Node.js memory limit for the build (carry-over from Part A)
+# ── 5. Detect public IP and write .env ───────────────────────────────────────
+log "Detecting VM public IP..."
+PUBLIC_IP=$(curl -s --connect-timeout 5 \
+    -H "Metadata:true" \
+    "http://169.254.169.254/metadata/instance/network/interface/0/ipv4/ipAddress/0/publicIpAddress?api-version=2021-02-01&format=text" \
+    2>/dev/null || hostname -I | awk '{print $1}')
+
+if [ -z "$PUBLIC_IP" ]; then
+    err "Could not detect public IP. Set CVAT_HOST manually in $APP_DIR/.env"
+fi
+good "Public IP detected: $PUBLIC_IP"
+
+log "Writing .env file..."
+SECRET=$(python3 -c "import secrets; print(secrets.token_hex(32))")
+cat > "$APP_DIR/.env" <<ENV
+CVAT_HOST=$PUBLIC_IP
+DJANGO_SECRET_KEY=$SECRET
+CVAT_VERSION=dev
+ENV
+good ".env written with CVAT_HOST=$PUBLIC_IP"
+
+# ── 6. Build backend image ────────────────────────────────────────────────────
+log "Building CVAT backend image (cvat/server:dev) — takes ~3 min..."
+docker build \
+    -f "$APP_DIR/Dockerfile" \
+    -t cvat/server:dev \
+    "$APP_DIR" \
+    2>&1 | tail -20
+good "Backend image built."
+
+# ── 7. Build UI image (includes audio player modifications) ──────────────────
+log "Building CVAT UI image (cvat/ui:dev) — takes ~5 min..."
 export NODE_OPTIONS="--max_old_space_size=4096"
 export DISABLE_SOURCE_MAPS=true
-
 docker build \
-    --build-arg DJANGO_SECRET_KEY="$(grep DJANGO_SECRET_KEY .env | cut -d= -f2)" \
-    -f Dockerfile.ui \
+    -f "$APP_DIR/Dockerfile.ui" \
     -t cvat/ui:dev \
-    .
+    "$APP_DIR" \
+    2>&1 | tail -20
+good "UI image built."
 
-# ── 7. Build backend image ────────────────────────────────────────────────────
-log "Building CVAT backend image (this takes ~3 minutes)..."
-docker build \
-    -f Dockerfile \
-    -t cvat/server:dev \
-    .
-
-# ── 8. Start services ─────────────────────────────────────────────────────────
+# ── 8. Start all services via Docker Compose ─────────────────────────────────
 log "Starting CVAT services..."
-$COMPOSE_CMD \
+cd "$APP_DIR"
+docker compose \
     -f docker-compose.yml \
     -f deployment/azure/docker-compose.azure.yml \
     --env-file .env \
     up -d
+good "Services started."
 
-# ── 9. Create superuser ───────────────────────────────────────────────────────
-log "Waiting for backend to be healthy (up to 60s)..."
-for i in $(seq 1 12); do
-    if docker exec cvat_server python manage.py check --deploy 2>/dev/null; then
+# ── 9. Wait for backend to be ready ──────────────────────────────────────────
+log "Waiting for backend to become healthy (up to 90s)..."
+for i in $(seq 1 18); do
+    if docker exec cvat_server python manage.py check 2>/dev/null; then
+        good "Backend is healthy."
         break
     fi
-    echo "  attempt $i/12..."
+    echo "  Waiting... ($i/18)"
     sleep 5
 done
 
+# ── 10. Create admin superuser ────────────────────────────────────────────────
 log "Creating admin superuser..."
-docker exec -e DJANGO_SUPERUSER_PASSWORD=cvat2024demo \
-    cvat_server python manage.py createsuperuser \
-    --username admin \
-    --email admin@example.com \
-    --noinput \
-    2>/dev/null || log "Superuser already exists — skipping"
+docker exec \
+    -e DJANGO_SUPERUSER_PASSWORD=cvat2024demo \
+    cvat_server \
+    python manage.py createsuperuser \
+        --username admin \
+        --email admin@example.com \
+        --noinput \
+    2>/dev/null && good "Superuser created." || good "Superuser already exists."
 
-# ── 10. Summary ───────────────────────────────────────────────────────────────
-PUBLIC_IP=$(grep CVAT_HOST .env | cut -d= -f2)
+# ── 11. Open port 80 in Ubuntu firewall (ufw) if active ──────────────────────
+if command -v ufw &>/dev/null && ufw status | grep -q "Status: active"; then
+    log "Opening port 80 in ufw..."
+    ufw allow 80/tcp
+    good "Port 80 allowed in ufw."
+fi
+
+# ── Done ──────────────────────────────────────────────────────────────────────
 echo ""
-echo "╔══════════════════════════════════════════════════════════╗"
-echo "║            CVAT (Audio Feature) is RUNNING!              ║"
-echo "╠══════════════════════════════════════════════════════════╣"
-echo "║  URL:       http://$PUBLIC_IP"
-echo "║  Username:  admin"
-echo "║  Password:  cvat2024demo"
-echo "║                                                          ║"
-echo "║  To stream logs:                                         ║"
-echo "║    docker compose logs -f cvat_server cvat_worker_import ║"
-echo "║                                                          ║"
-echo "║  To stop:                                                ║"
-echo "║    docker compose -f docker-compose.yml                  ║"
-echo "║      -f deployment/azure/docker-compose.azure.yml down   ║"
-echo "╚══════════════════════════════════════════════════════════╝"
+echo "============================================================"
+echo "  CVAT with Audio Feature is RUNNING!"
+echo "============================================================"
+echo "  URL:      http://$PUBLIC_IP"
+echo "  Username: admin"
+echo "  Password: cvat2024demo"
+echo ""
+echo "  Monitor services:"
+echo "    cd $APP_DIR"
+echo "    docker compose logs -f cvat_server cvat_worker_import"
+echo ""
+echo "  Stop everything:"
+echo "    docker compose -f docker-compose.yml -f deployment/azure/docker-compose.azure.yml down"
+echo "============================================================"
