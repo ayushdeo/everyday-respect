@@ -3,6 +3,7 @@
 This repository contains a modified fork of CVAT (Computer Vision Annotation Tool) featuring **Native Browser Audio Playback** and **Automated Azure Deployment**.
 
 ## Public Deployment
+- IMPORTANT: I have stopped the VM, please email me to test performance eval.
 - **URL**: [http://172.169.250.108](http://172.169.250.108)
 - **Username**: `admin`
 - **Password**: `cvatayush26`
