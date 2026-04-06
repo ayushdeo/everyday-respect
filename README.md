@@ -1,5 +1,8 @@
 # CVAT Audio Challenge Submission
 
+> [!TIP]
+> **New to this repository?** Check out the [Submission Review Guide](SUBMISSION_REVIEW_GUIDE.md) for direct links to the revised code portions and implementation logic for Parts A, B, and C.
+
 This repository contains a modified fork of CVAT (Computer Vision Annotation Tool) featuring **Native Browser Audio Playback** and **Automated Azure Deployment**.
 
 ## Public Deployment
